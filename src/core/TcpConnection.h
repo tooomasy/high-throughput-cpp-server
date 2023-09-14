@@ -111,7 +111,6 @@ private:
   // FIXME: assume one call to retrieve all
   bool handleRead() {
     int n = inputBuf_.read(fd_);
-    // // std::cout << "read: n=" << n << '\n';
     if (n <= 0) {
       eventHandler.dispatchEvent(Event::Closeable);
       return false;
@@ -122,7 +121,6 @@ private:
   // FIXME: assume one call to retrieve all
   bool handleWrite() {
     int n = outputBuf_.write(fd_);
-    // // std::cout << "write: n=" << n << '\n';
     if (n >= 0) {
       outputBuf_.flush();
       return true;

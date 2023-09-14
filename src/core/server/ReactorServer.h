@@ -36,25 +36,19 @@ public:
   ReactorServer(InetAddress &inetAddress)
       : inetAddress_(&inetAddress), acceptor_(acceptorLoop_, *inetAddress_) {
     acceptor_.onNewConnection([this](int peerFd) {
-      // std::cout << "1\n";
       EventLoop &looper = peerEventLoops.getNextLoop();
 
       looper.post([this, peerFd, &looper]() {
-        // std::cout << "2\n";
         auto connection =
             std::make_unique<TcpConnection<Conn::NonBlocking>>(peerFd, &looper);
         connection->onMessage(
             [this](const std::string &req) { return handleMessage(req); });
         connections[peerFd] = std::move(connection);
-        // std::cout << "3\n";
       });
     });
   }
 
-  void start() {
-    // std::cout << std::this_thread::get_id() << " main-thread\n";
-    acceptor_.listen();
-  }
+  void start() { acceptor_.listen(); }
 };
 } // namespace core
 } // namespace CppServer

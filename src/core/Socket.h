@@ -30,7 +30,6 @@ public:
     sockaddr_in addr = {};
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr(address.ip().c_str());
-    // std::cout << "port=" << address.port() << "\n";
     addr.sin_port = htons(address.port());
     sock.setReuseAddress(true);
     sock.setReusePort(true);

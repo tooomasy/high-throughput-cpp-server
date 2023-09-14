@@ -31,11 +31,8 @@ public:
     serverHandler_.onReadable([this]() {
       looper_->post([this]() {
         InetAddress peerAddress;
-        // std::cout << "wait accept\n";
         int peerFd = serverSocket_.accept(&peerAddress);
-        // std::cout << "IN accept\n";
         newConnectionCb(peerFd);
-        // std::cout << "OUT accept\n";
       });
     });
   }

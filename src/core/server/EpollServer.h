@@ -41,7 +41,6 @@ public:
       connection->onMessage(
           [this](const std::string &req) { return handleMessage(req); });
       connections[peerFd] = std::move(connection);
-      // // std::cout << peerFd << '\n';
     });
   }
 
