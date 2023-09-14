@@ -1,5 +1,11 @@
+## High Throughput C++ Server
+This repository serves as a record of how different server architectures impact the performance of processing connections. It specifically focuses on the reactor pattern, which is a widely adopted model utilized by various libraries and frameworks. The goal is to demonstrate how this model outperforms other architectural approaches. To conduct the tests, the tool `wrk2` is employed, which provides statistics on latency and throughput.
+
+All tests are performed using the following command: `wrk -c 2000 -d 30s -t 16 -R 200000 http://localhost:8080`. The test duration is set to 30 seconds, with 2000 concurrent connections established. Each connection sends a total of 200,000 requests.
+
 ## Performance Analysis
-### Basic
+### Basic (Single Thread)
+The server operates on a basic architecture where a single thread handles all connections. The main thread continuously follows a sequence of operations: accepting incoming connections, reading data, writing responses, and closing connections. However, this architecture only allows one connection to be established at a time. If a connection keeps sending requests without closing, it prevents the main thread from accepting other simultaneous connections. As a result, only the first connection maintains a response time of 1.749ms, while the rest of the connections experience timeouts.
 ```
 Running 30s test @ http://localhost:8080
   16 threads and 2000 connections
@@ -28,7 +34,8 @@ Requests/sec:     97.96
 Transfer/sec:      3.64KB
 ```
 ---
-Basic (Thread per Connection)
+### Basic (Thread per Connection)
+In this alternative architecture, each connection is managed by a separate thread drawn from a thread pool. Unlike the previous architecture, the main thread's sole responsibility is to accept incoming connections and swiftly delegate them to new threads for handling. This approach enables concurrent connections without being blocked by ongoing connections. However, the maximum number of connections is constrained by the thread pool's capacity, which is set at 1000 threads. During testing, 2000 connections were established, resulting in half of the connections being unable to be accepted by the server, leading to timeouts.
 ```
 Running 30s test @ http://localhost:8080
   16 threads and 2000 connections
@@ -57,7 +64,8 @@ Requests/sec:  97015.23
 Transfer/sec:      3.52MB
 ```
 ---
-I/O Multiplexing Server
+### I/O Multiplexing Server
+This architecture resembles the first server architecture, where a single thread handles all incoming connections. However, an OS I/O Multiplexing mechanism, such as epoll in Linux, is employed to manage socket availability notification. This mechanism eliminates the need for us to continuously loop and instead relies on the kernel to notify events. By incorporating epoll, the server can handle a significant number of connections using just one thread. However, as the number of concurrent connections increases, the response latency experiences a notable increase. This latency is likely a result of the previous processing tasks associated with each connection. While epoll allows for high connection throughput, the response latency becomes unacceptable. In extreme cases, the response time can stretch up to 13 seconds to complete.
 ```
 Running 30s test @ http://localhost:8080
   16 threads and 2000 connections
@@ -86,7 +94,8 @@ Requests/sec: 117496.10
 Transfer/sec:      4.26MB
 ```
 ---
-Reactor Pattern
+### Reactor Pattern
+This server design utilizes IO multiplexing, but with a departure from the single-threaded approach. Instead, multiple threads are employed. The "Acceptor" component takes on the responsibility of accepting incoming connections. The server socket is registered with the epoller, which triggers a notification when the socket becomes available for accepting peer connections. The accepted connections are then handed over to the event loop of another thread, where they are registered with epoll. Multiple event loops are introduced to handle client requests and process responses. During testing, no requests experienced timeouts, and the latency remained within an acceptable range, typically falling below 1 second.
 ```
 Running 30s test @ http://localhost:8080
   16 threads and 2000 connections
